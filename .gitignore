@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 *.pkl
 *.csv
+generate_balanced_micro_projects.py
+generate_balanced_micro_projects_v2.py
