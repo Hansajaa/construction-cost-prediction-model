@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -5,6 +6,7 @@ import joblib
 import pandas as pd
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,13 +37,27 @@ class ProjectInput(BaseModel):
 
 @app.post("/predict-cost")
 def predict_cost(data: ProjectInput):
-    df = pd.DataFrame([data.model_dump()])
-    prediction = model.predict(df)[0]
-    prediction = max(float(prediction), 0.0)
-    return {
-        "estimated_cost_lkr": round(prediction, 2),
-        "status": "success"
-    }
+    logger.info("Received data for cost prediction: %s", data)
+
+    try:
+        if hasattr(data, "model_dump"):
+            payload = data.model_dump()
+        else:
+            payload = data.dict()
+
+        df = pd.DataFrame([payload])
+        prediction = model.predict(df)[0]
+        prediction = max(float(prediction), 0.0)
+        return {
+            "estimated_cost_lkr": round(prediction, 2),
+            "status": "success"
+        }
+    except Exception as exc:
+        logger.exception("Cost prediction failed")
+        return {
+            "status": "error",
+            "message": str(exc),
+        }
 
 
 class TaskRiskInput(BaseModel):
